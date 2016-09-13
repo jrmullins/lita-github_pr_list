@@ -3,12 +3,13 @@ require "octokit"
 module Lita
   module GithubPrList
     class PullRequest
-      attr_accessor :github_client, :github_organization, :github_pull_requests, :response
+      attr_accessor :github_client, :github_organization, :github_pull_requests, :response, :repo_whitelist
 
       def initialize(params = {})
         self.response = params.fetch(:response, nil)
         github_token = params.fetch(:github_token, nil)
         self.github_organization = params.fetch(:github_organization, nil)
+        self.repo_whitelist = params.fetch(:repo_whitelist, nil)
         self.github_pull_requests = []
 
         raise "invalid params in #{self.class.name}" if response.nil? || github_token.nil? || github_organization.nil?
@@ -28,7 +29,10 @@ module Lita
         issues.sort! { |a,b| a.repository.name.downcase <=> b.repository.name.downcase }
 
         issues.each do |i|
-          github_pull_requests << i if i.pull_request
+          if i.pull_request && repo_whitelist.find_index(i.repository.name)
+            # puts "John: #{i.repository.name}"
+            github_pull_requests << i
+          end
         end
       end
 
@@ -40,6 +44,8 @@ module Lita
       end
 
       def repo_status(repo_full_name, issue)
+        # puts "#{repo_full_name} #{issue.body}"
+        issue.body = "" if issue.body.nil?
         status_object = Lita::GithubPrList::Status.new(comment: ":new: " + issue.body)
         status = status_object.comment_status
         comments(repo_full_name, issue.number).each do |c|

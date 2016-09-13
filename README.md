@@ -1,6 +1,6 @@
-# lita-github_pr_list
+# lita-github_pr_list (whitelist)
 
-`lita-github_pr_list` is a handler for Lita that connects up with GitHub and lists an organization's pull requests
+`lita-github_pr_list` is a handler for Lita that connects up with GitHub and lists an organization's pull requests from a list of repos.
 
 ## Installation
 
@@ -23,6 +23,7 @@ Lita.configure do |config|
 ...
   config.handlers.github_pr_list.github_organization = ENV['GITHUB_ORG']
   config.handlers.github_pr_list.github_access_token = ENV['GITHUB_TOKEN']
+  config.handlers.github_pr_list.repo_whitelist = %w(repo1 repo2 repo3)
 ...
 end
 ```
@@ -31,7 +32,7 @@ end
 
 ```Lita: pr list```
 
-All of the open pull requests for an organization will get listed out from lita. If it has one of the emoji statuses below it
+All of the open pull requests in the whitelist for an organization will get listed out from lita. If it has one of the emoji statuses below it
 will display it, otherwise it will display :new:.
 
 ## Emoji status

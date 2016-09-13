@@ -15,6 +15,7 @@ module Lita
         config.comment_hook_event_type = nil
         config.pull_request_open_message_hook_url = nil
         config.pull_request_open_message_hook_event_type = nil
+        config.repo_whitelist = nil
       end
 
       route(/pr list/i, :list_org_pr, command: true,
@@ -41,6 +42,7 @@ module Lita
       def list_org_pr(response)
         pull_requests = Lita::GithubPrList::PullRequest.new({ github_organization: github_organization,
                                                               github_token: github_access_token,
+                                                              repo_whitelist: repo_whitelist,
                                                               response: response }).list
         merge_requests = redis.keys("gitlab_mr*").map { |key| redis.get(key) }
 
@@ -107,6 +109,10 @@ module Lita
 
       def github_access_token
         Lita.config.handlers.github_pr_list.github_access_token
+      end
+
+      def repo_whitelist
+        Lita.config.handlers.github_pr_list.repo_whitelist
       end
 
       def hook_info
