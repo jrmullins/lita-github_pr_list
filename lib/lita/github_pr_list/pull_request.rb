@@ -39,7 +39,7 @@ module Lita
       def build_summary
         github_pull_requests.map do |pr_issue|
           status = repo_status("#{pr_issue.repository.full_name}", pr_issue)
-          "#{pr_issue.repository.name} #{status} #{pr_issue.title} #{pr_issue.pull_request.html_url}"
+          "#{pr_issue.repository.name} #{pr_issue.user.login} #{pr_issue.title} #{pr_issue.pull_request.html_url}"
         end
       end
 
