@@ -25,15 +25,18 @@ module Lita
     private
       def get_pull_requests
         # Grab the issues and sort out the pull request issues by repos name
-        puts "Gathering PRs..."
+        threads = []
         github_client.team_repositories(team_id).each do |repo|
-          github_client.list_issues(repo.id).each do |issue|
-            if issue.pull_request
-              issue.repository = repo
-              github_pull_requests << issue
+          threads << Thread.new do
+            github_client.list_issues(repo.id).each do |issue|
+              if issue.pull_request
+                issue.repository = repo
+                github_pull_requests << issue
+              end
             end
           end
         end
+        threads.map(&:join)
       end
 
       def build_summary
