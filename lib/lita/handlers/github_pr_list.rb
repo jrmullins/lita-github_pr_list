@@ -48,7 +48,7 @@ module Lita
 
         requests = pull_requests + merge_requests
         message = "I found #{requests.count} open pull requests for #{github_organization}\n"
-        response.reply("/code #{message}#{requests.join("\n")}")
+        response.reply("#{message}#{requests.join("\n\n")}")
       end
 
       def alias_user(response)
