@@ -1,5 +1,8 @@
 require "lita"
 require "json"
+require "octokit"
+require 'action_view'
+include ActionView::Helpers::DateHelper
 
 module Lita
   module Handlers
@@ -20,6 +23,14 @@ module Lita
 
       route(/pr list/i, :list_org_pr, command: true,
             help: { "pr list" => "List open pull requests for an organization." }
+      )
+
+      route(/^prs repo\s+(.+)/i, :list_repo_prs, command: true,
+            help: { "prs repo REPO" => "List open pull requests for a repo." }
+      )
+
+      route(/prs list/i, :list_org_prs, command: true,
+            help: { "prs list" => "List open pull requests for an organization." }
       )
 
       route(/pr add hooks/i, :add_pr_hooks, command: true,
@@ -49,6 +60,90 @@ module Lita
         requests = pull_requests + merge_requests
         message = "I found #{requests.count} open pull requests for #{github_organization}\n"
         response.reply("#{message}#{requests.join("\n\n")}")
+      end
+
+      def list_repo_prs(response)
+        client = Octokit::Client.new(access_token: github_token, auto_paginate: true)
+
+        # Get a repo
+        org_name = github_organization
+        repo_name = response.args[1]
+        begin
+          repo = client.repo "#{org_name}/#{repo_name}"
+        rescue Octokit::NotFound
+          response.reply("Can't find #{repo_name}")
+          return
+        end
+
+        # Get the Issues/PRs
+        issues = client.issues(repo.id)
+
+        # it's a pull request if it has a pull_request field
+        pull_requests = issues.select do |issue|
+          issue.pull_request != nil
+        end
+
+        if pull_requests.length == 0
+          response.reply("No pull requests found for #{repo_name}")
+          return
+        end
+
+        # Build a msg
+        msgs = ["#{org_name}/#{repo_name} - #{repo.html_url}"]
+
+        msgs += pull_requests.map do |pr|
+          pr_title = pr.title
+          pr_owner = pr.user.login
+          pr_how_old = time_ago_in_words(pr.created_at) + ' ago'
+          "##{pr.number} #{pr.title} - (#{pr.user.login} - #{pr_how_old})"
+        end
+
+        msg = msgs.join "\n"
+
+        response.reply(msg)
+      end
+
+      def list_org_prs(response)
+        client = Octokit::Client.new(access_token: github_token, auto_paginate: true)
+
+        org_name = github_organization
+        team_id = team_id
+
+        repos = client.team_repositories team_id
+        if repos.length == 0
+          response.reply("No repos found for team #{team_id}")
+          return
+        end
+
+        repo_msgs = []
+
+        repos.each do |repo|
+          issues = client.issues(repo.id)
+
+          # it's a pull request if it has a pull_request field
+          pull_requests = issues.select do |issue|
+            issue.pull_request != nil
+          end
+
+          if pull_requests.length == 0
+            next
+          end
+
+          msgs = ["#{repo.name} - #{repo.html_url}"]
+
+          msgs += pull_requests.map do |pr|
+            pr_title = pr.title
+            pr_owner = pr.user.login
+            pr_how_old = time_ago_in_words(pr.created_at) + ' ago'
+            "##{pr.number} #{pr.title} - (#{pr.user.login} - #{pr_how_old})"
+          end
+
+          msg = msgs.join "\n"
+          repo_msgs << msg
+        end
+
+        outputMsg = repo_msgs.join "\n- - - - - - - - - -\n"
+        response.reply(outputMsg)
       end
 
       def alias_user(response)
