@@ -63,7 +63,7 @@ module Lita
       end
 
       def list_repo_prs(response)
-        client = Octokit::Client.new(access_token: github_token, auto_paginate: true)
+        client = Octokit::Client.new(access_token: github_access_token, auto_paginate: true)
 
         # Get a repo
         org_name = github_organization
@@ -104,7 +104,7 @@ module Lita
       end
 
       def list_org_prs(response)
-        client = Octokit::Client.new(access_token: github_token, auto_paginate: true)
+        client = Octokit::Client.new(access_token: github_access_token, auto_paginate: true)
 
         org_name = github_organization
         team_id = team_id
