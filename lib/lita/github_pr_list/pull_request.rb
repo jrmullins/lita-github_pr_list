@@ -1,4 +1,6 @@
 require "octokit"
+require 'action_view'
+include ActionView::Helpers::DateHelper
 
 module Lita
   module GithubPrList
@@ -40,8 +42,8 @@ module Lita
       end
 
       def build_summary
-        github_pull_requests.map do |pr_issue|
-          "#{pr_issue.repository.name}\t#{pr_issue.user.login}\t#{pr_issue.title} #{pr_issue.pull_request.html_url}"
+        github_pull_requests.sort { |a,b| DateTime.parse(a.updated_at) <=> DateTime.parse(b.updated_at) }.map do |pr_issue|
+          "#{pr_issue.repository.name}\t#{pr_issue.user.login}\t#{pr_issue.title} #{pr_issue.pull_request.html_url}\nLast Updated #{time_ago_in_words(Time.parse(pr_issue.updated_at)) ago}"
         end
       end
 

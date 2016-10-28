@@ -4,6 +4,7 @@ describe Lita::Handlers::GithubPrList, lita_handler: true do
   before :each do
     Lita.config.handlers.github_pr_list.github_organization = 'aaaaaabbbbbbcccccc'
     Lita.config.handlers.github_pr_list.github_access_token = 'wafflesausages111111'
+    Lita.config.handlers.github_pr_list.team_id = 'sunshineandrainbows'
   end
 
   let(:agent) do
@@ -22,6 +23,7 @@ describe Lita::Handlers::GithubPrList, lita_handler: true do
     resources
   end
 
+  let(:one_repo) { sawyer_resource_array("spec/fixtures/one_repo.json") }
   let(:one_issue) { sawyer_resource_array("spec/fixtures/one_org_issue_list.json") }
   let(:two_issues) { sawyer_resource_array("spec/fixtures/two_org_issue_list.json") }
   let(:three_issues) { sawyer_resource_array("spec/fixtures/three_org_issue_list.json") }
@@ -38,8 +40,8 @@ describe Lita::Handlers::GithubPrList, lita_handler: true do
   it { is_expected.to route_http(:post, "/merge_request_action").to(:merge_request_action) }
 
   it "displays a list of pull requests" do
-    expect_any_instance_of(Octokit::Client).to receive(:org_issues).and_return(three_issues)
-    expect_any_instance_of(Octokit::Client).to receive(:issue_comments).and_return(issue_comments_passed, issue_comments_failed, issue_comments_passed_design)
+    expect_any_instance_of(Octokit::Client).to receive(:team_repositories).and_return(one_repo)
+    expect_any_instance_of(Octokit::Client).to receive(:list_issues).and_return(three_issues)
 
     send_command("pr list")
 
@@ -47,37 +49,37 @@ describe Lita::Handlers::GithubPrList, lita_handler: true do
   end
 
   it "displays the status of the PR (pass/fail)" do
-    expect_any_instance_of(Octokit::Client).to receive(:org_issues).and_return(three_issues)
-    expect_any_instance_of(Octokit::Client).to receive(:issue_comments).and_return(issue_comments_passed, issue_comments_failed, issue_comments_passed_design)
+    expect_any_instance_of(Octokit::Client).to receive(:team_repositories).and_return(one_repo)
+    expect_any_instance_of(Octokit::Client).to receive(:list_issues).and_return(three_issues)
 
     send_command("pr list")
 
-    expect(replies.last).to include("waffles (elephant)(art)(art)(art) Found a waffle https://github.com/octocat/Hello-World/pull/1347")
-    expect(replies.last).to include("waffles (elephant)(elephant)(elephant)(art) Found a bug https://github.com/octocat/Hello-World/pull/1347")
-    expect(replies.last).to include("waffles (poop)(elephant)(art) Found a waffle https://github.com/octocat/Hello-World/pull/1347")
+    expect(replies.last).to include("Found a waffle https://github.com/octocat/Hello-World/pull/1347")
+    expect(replies.last).to include("Found a bug https://github.com/octocat/Hello-World/pull/1347")
+    expect(replies.last).to include("Found a waffle https://github.com/octocat/Hello-World/pull/1347")
   end
 
   it "displays the status of the PR (in review/fixed)" do
-    expect_any_instance_of(Octokit::Client).to receive(:org_issues).and_return(two_issues)
-    expect_any_instance_of(Octokit::Client).to receive(:issue_comments).and_return(issue_comments_in_review, issue_comments_fixed)
+    expect_any_instance_of(Octokit::Client).to receive(:team_repositories).and_return(one_repo)
+    expect_any_instance_of(Octokit::Client).to receive(:list_issues).and_return(two_issues)
 
     send_command("pr list")
-    expect(replies.last).to include("waffles (book)(elephant)(art) Found a bug https://github.com/octocat/Hello-World/pull/1347")
-    expect(replies.last).to include("waffles (wave)(elephant)(art) Found a waffle https://github.com/octocat/Hello-World/pull/1347")
+    expect(replies.last).to include("Found a bug https://github.com/octocat/Hello-World/pull/1347")
+    expect(replies.last).to include("Found a waffle https://github.com/octocat/Hello-World/pull/1347")
   end
 
   it "displays the status of the PR (new)" do
-    expect_any_instance_of(Octokit::Client).to receive(:org_issues).and_return(one_issue)
-    expect_any_instance_of(Octokit::Client).to receive(:issue_comments).and_return(issue_comments_new)
+    expect_any_instance_of(Octokit::Client).to receive(:team_repositories).and_return(one_repo)
+    expect_any_instance_of(Octokit::Client).to receive(:list_issues).and_return(one_issue)
 
     send_command("pr list")
 
-    expect(replies.last).to include("waffles (new)(elephant)(art) Found a bug https://github.com/octocat/Hello-World/pull/1347")
+    expect(replies.last).to include("Found a bug https://github.com/octocat/Hello-World/pull/1347")
   end
 
   it "lists gitlab merge requests" do
-    expect_any_instance_of(Octokit::Client).to receive(:org_issues).and_return(one_issue)
-    expect_any_instance_of(Octokit::Client).to receive(:issue_comments).and_return(issue_comments_new)
+    expect_any_instance_of(Octokit::Client).to receive(:team_repositories).and_return(one_repo)
+    expect_any_instance_of(Octokit::Client).to receive(:list_issues).and_return(one_issue)
 
     subject.merge_request_action(gitlab_merge_request, nil)
 
@@ -87,8 +89,8 @@ describe Lita::Handlers::GithubPrList, lita_handler: true do
   end
 
   it "removes gitlab merge requests" do
-    expect_any_instance_of(Octokit::Client).to receive(:org_issues).and_return(one_issue)
-    expect_any_instance_of(Octokit::Client).to receive(:issue_comments).and_return(issue_comments_new)
+    expect_any_instance_of(Octokit::Client).to receive(:team_repositories).and_return(one_repo)
+    expect_any_instance_of(Octokit::Client).to receive(:list_issues).and_return(one_issue)
 
     subject.merge_request_action(gitlab_request_closed, nil)
     send_command("pr list")
